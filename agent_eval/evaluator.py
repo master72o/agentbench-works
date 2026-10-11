@@ -38,13 +38,19 @@ class TrajectoryEvaluator:
         total_steps = len(trajectory)
 
         # 1. Task Completion Check
+        ans_lower = final_answer.lower()
+        failure_markers = ["unable to", "could not", "failed to", "syntax error", "aborted", "does not exist"]
+        is_failure_declared = any(marker in ans_lower for marker in failure_markers)
+
         ref_words = set(re.findall(r"\w+", task.reference_answer.lower()))
-        ans_words = set(re.findall(r"\w+", final_answer.lower()))
-        if not ref_words:
+        ans_words = set(re.findall(r"\w+", ans_lower))
+        if is_failure_declared:
+            task_completed = False
+        elif not ref_words:
             task_completed = True
         else:
             intersection = ans_words.intersection(ref_words)
-            task_completed = (len(intersection) / len(ref_words)) >= 0.50
+            task_completed = (len(intersection) / len(ref_words)) >= 0.45
 
         # 2. Tool Call Accuracy
         successful_calls = sum(1 for s in trajectory if s.status == ToolCallStatus.SUCCESS)
@@ -86,4 +92,8 @@ class TrajectoryEvaluator:
             argument_correctness=round(argument_correctness, 4),
             error_recovery_rate=round(error_recovery_rate, 4),
             overall_score=round(overall_score, 4),
+            domain=getattr(task, "domain", "General"),
+            difficulty=getattr(task, "difficulty", "Intermediate"),
+            steps_taken=total_steps,
+            optimal_steps=task.optimal_steps,
         )

@@ -57,6 +57,9 @@ class AgentTask:
     goal: str
     optimal_steps: int
     reference_answer: str
+    domain: str = "General"
+    difficulty: str = "Intermediate"
+    failure_types_tested: List[str] = field(default_factory=list)
     trajectory_v1: List[TrajectoryStep] = field(default_factory=list)
     trajectory_v2: List[TrajectoryStep] = field(default_factory=list)
     trajectory_v3: List[TrajectoryStep] = field(default_factory=list)
@@ -74,6 +77,9 @@ class AgentTask:
             goal=data["goal"],
             optimal_steps=data.get("optimal_steps", 2),
             reference_answer=data["reference_answer"],
+            domain=data.get("domain", "General"),
+            difficulty=data.get("difficulty", "Intermediate"),
+            failure_types_tested=data.get("failure_types_tested", []),
             trajectory_v1=parse_steps(data.get("trajectory_v1", [])),
             trajectory_v2=parse_steps(data.get("trajectory_v2", [])),
             trajectory_v3=parse_steps(data.get("trajectory_v3", [])),
@@ -93,11 +99,19 @@ class TrajectoryEvaluation:
     argument_correctness: float
     error_recovery_rate: float
     overall_score: float
+    domain: str = "General"
+    difficulty: str = "Intermediate"
+    steps_taken: int = 0
+    optimal_steps: int = 0
 
     def to_dict(self) -> Dict[str, Any]:
         return {
             "task_id": self.task_id,
             "agent_version": self.agent_version.value if isinstance(self.agent_version, AgentVariant) else str(self.agent_version),
+            "domain": self.domain,
+            "difficulty": self.difficulty,
+            "steps_taken": self.steps_taken,
+            "optimal_steps": self.optimal_steps,
             "task_completed": bool(self.task_completed),
             "tool_call_accuracy": round(self.tool_call_accuracy, 4),
             "planning_efficiency": round(self.planning_efficiency, 4),

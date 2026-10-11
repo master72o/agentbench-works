@@ -1,44 +1,69 @@
-# Autonomous Agent Trajectory Evaluation Research Report
+# AgentBench Works: Autonomous Multi-Step Agent Trajectory Benchmark & Error Recovery Report
 
 ## Executive Summary
 
-This study benchmarks autonomous LLM agent trajectories, multi-step planning, tool selection accuracy, argument schema compliance, and error recovery across 3 agent architectures:
-1. **Agent v1 (ReAct Baseline)**: Standard Reason + Act prompting without strict tool schemas.
-2. **Agent v2 (Structured Tools)**: ReAct with JSON Schema validation on tool arguments.
-3. **Agent v3 (Reflection & Recovery)**: Structured tool calling + Self-Reflection loop for error recovery.
+Autonomous LLM agents face compounding failure modes during multi-step execution:
+1. **Tool Argument Hallucination**: Generating parameters with missing keys, malformed JSON, or incompatible scalar types.
+2. **Environmental Fragility**: Inability to handle runtime exceptions (e.g. HTTP 429/504, missing database columns, lock contention).
+3. **Plan Divergence & Looping**: Resubmitting identical failed arguments repeatedly rather than reflecting and replanning.
+
+This benchmark comprehensively evaluates three agent architectures across **16 realistic multi-step enterprise workflows** spanning Finance, Cloud DevOps, Data Engineering, Cybersecurity, and Enterprise CRM:
+- **`Agent_v1_ReAct_Baseline`**: Unstructured Reason + Act prompting.
+- **`Agent_v2_Structured_Tools`**: ReAct with Pydantic JSON Schema tool validation.
+- **`Agent_v3_Reflection_Recovery`**: Structured tool calling paired with an explicit Self-Reflection & Replanning recovery loop.
 
 ---
 
-## Controlled Agent Trajectory Metrics Matrix
+## Controlled Benchmark Performance Matrix
 
 | Agent Architecture | Task Success Rate | Tool Call Accuracy | Planning Efficiency | Error Recovery Rate | Overall Score |
 | :--- | :--- | :--- | :--- | :--- | :--- |
-| `Agent_v1_ReAct_Baseline` | 0.0% | 33.3% | 100.0% | 33.3% | 0.3500 |
-| `Agent_v2_Structured_Tools` | 100.0% | 100.0% | 100.0% | 100.0% | 1.0000 |
+| `Agent_v1_ReAct_Baseline` | 25.0% | 64.6% | 100.0% | 37.5% | 0.5240 |
+| `Agent_v2_Structured_Tools` | 87.5% | 100.0% | 100.0% | 100.0% | 0.9563 |
 | `Agent_v3_Reflection_Recovery` | 100.0% | 100.0% | 100.0% | 100.0% | 1.0000 |
 
 ---
 
-## Key Experimental Findings
+## Domain-Specific Task Success Breakdown
 
-1. **Impact of Structured Tool Schemas (v2)**: Introducing Pydantic/JSON Schema tool definitions increased **Tool Call Accuracy** from **60%** (v1) to **95%** (v2) by eliminating malformed tool arguments.
-2. **Self-Healing Error Recovery (v3)**: The Reflection & Recovery loop enabled Agent v3 to recover from tool execution errors in **100%** of cases, boosting **Task Success Rate** to **100%**.
-3. **Planning Efficiency**: Agent v3 avoided infinite loops and redundant tool calls, achieving an optimal step efficiency ratio of **1.0**.
-
----
-
-## Production Agent Engineering Guidelines
-
-- **Enforce Strict Schema Tool Calling**: Use function calling / JSON schema specifications to eliminate malformed arguments.
-- **Implement Trajectory Self-Reflection**: Provide environment error feedback to the agent to allow real-time plan adjustments.
-- **Monitor Trajectory Step Limits**: Set hard boundaries on maximum trajectory steps to prevent runaway loops and API cost spikes.
+| Enterprise Domain | v1 (ReAct Baseline) | v2 (Structured Tools) | v3 (Reflection & Recovery) |
+| :--- | :--- | :--- | :--- |
+| **Cloud Infrastructure & DevOps** | 0.0% | 100.0% | 100.0% |
+| **Cybersecurity & Threat Response** | 33.3% | 100.0% | 100.0% |
+| **Database & Systems Reliability** | 33.3% | 66.7% | 100.0% |
+| **Enterprise Operations & CRM** | 25.0% | 75.0% | 100.0% |
+| **Finance & Treasury** | 33.3% | 100.0% | 100.0% |
 
 ---
 
-## Visualizations
-- Trajectory Performance Comparison: `reports/figures/agent_trajectory_performance.png`
-- Planning Efficiency & Error Recovery: `reports/figures/planning_efficiency_breakdown.png`
-- Tool Error Outcome Distribution: `reports/figures/tool_error_taxonomy.png`
+## Key Empirical Findings
+
+1. **Schema Validation Eliminates Argument Syntax Errors**:
+   Transitioning from unstructured ReAct (`v1`) to strict JSON Schema tool specifications (`v2`) boosted mean **Tool Call Accuracy** from **64.6%** to **100.0%**. This confirms that schema validation prevents parameter hallucinations at the API boundary.
+
+2. **Self-Reflection Drives Runtime Resilience**:
+   While schema enforcement protects input formatting, it cannot prevent environment errors (e.g. database locks, transient gateway timeouts, missing namespaces). The Self-Reflection & Recovery loop in `v3` improved **Error Recovery Rate** from **37.5%** to **100.0%**, driving overall task completion to **100.0%**.
+
+3. **Planning Efficiency & Infinite Loop Mitigation**:
+   Unstructured agents frequently enter runaway retry loops when encountering errors. Structured reflection allows agents to dynamically adjust parameters or select fallback tools within $\le 1$ additional step of optimal paths.
 
 ---
-*Report auto-generated by Agent Trajectory Evaluation Framework v1.0.0*
+
+## Production Agent Engineering Best Practices
+
+- **Enforce JSON Schema Tool Contracts**: Bind tool arguments to typed Pydantic models with explicit field descriptions and validation constraints.
+- **Inject Error Context into System Reflections**: When a tool raises an exception, return the structured error message to the agent's scratchpad to enable adaptive correction.
+- **Implement Exponential Jitter Backoff on Contention**: For shared resource locks or rate-limited endpoints, equip agents with explicit backoff arguments.
+- **Enforce Strict Trajectory Step Ceilings**: Set hard upper bounds (e.g., $N = 2 \times N_{optimal}$) to terminate unresponsive reasoning loops.
+
+---
+
+## Benchmark Artifacts & Visualizations
+
+- **Trajectory Performance Comparison**: `reports/figures/agent_trajectory_performance.png`
+- **Planning Efficiency & Error Recovery**: `reports/figures/planning_efficiency_breakdown.png`
+- **Tool Error Outcome Distribution**: `reports/figures/tool_error_taxonomy.png`
+- **Domain Performance Breakdown**: `reports/figures/domain_performance_comparison.png`
+
+---
+*Report generated by AgentBench Works (`agentbench-works`) v1.0.0*
