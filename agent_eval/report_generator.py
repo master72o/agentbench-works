@@ -153,3 +153,27 @@ This benchmark comprehensively evaluates three agent architectures across **16 r
         csv_path = os.path.join(output_dir, "agent_evaluation_results.csv")
         df = pd.DataFrame(csv_rows)
         df.to_csv(csv_path, index=False)
+
+    @staticmethod
+    def export_summary_dict(all_evaluations: Dict[AgentVariant, List[TrajectoryEvaluation]]) -> Dict[str, Any]:
+        """Calculates a high-level summary dictionary across agent variants for programmatic consumption."""
+        summary = {}
+        for agent_v, evals in all_evaluations.items():
+            key = agent_v.value if isinstance(agent_v, AgentVariant) else str(agent_v)
+            if not evals:
+                continue
+            total = len(evals)
+            success_count = sum(1 for e in evals if e.task_completed)
+            avg_overall = sum(e.overall_score for e in evals) / total
+            avg_tool_acc = sum(e.tool_call_accuracy for e in evals) / total
+            avg_recovery = sum(e.error_recovery_rate for e in evals) / total
+            summary[key] = {
+                "total_tasks": total,
+                "success_count": success_count,
+                "task_success_rate": round(success_count / total, 4),
+                "mean_overall_score": round(avg_overall, 4),
+                "mean_tool_accuracy": round(avg_tool_acc, 4),
+                "mean_error_recovery": round(avg_recovery, 4),
+            }
+        return summary
+

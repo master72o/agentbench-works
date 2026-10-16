@@ -2,7 +2,7 @@
 Agent Trajectory Evaluation Framework Package.
 """
 
-__version__ = "1.0.0"
+__version__ = "1.1.0"
 __author__ = "Munir (master72o)"
 
 from agent_eval.schema import (
@@ -18,6 +18,7 @@ from agent_eval.metrics import AgentMetricsCalculator
 from agent_eval.experiment_runner import ExperimentRunner
 from agent_eval.report_generator import ReportGenerator
 from agent_eval.visualizer import Visualizer
+from agent_eval.model_client import AgentModelClient, ModelCallResult
 
 __all__ = [
     "AgentVariant",
@@ -31,4 +32,6 @@ __all__ = [
     "ExperimentRunner",
     "ReportGenerator",
     "Visualizer",
+    "AgentModelClient",
+    "ModelCallResult",
 ]
