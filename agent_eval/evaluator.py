@@ -97,3 +97,99 @@ class TrajectoryEvaluator:
             steps_taken=total_steps,
             optimal_steps=task.optimal_steps,
         )
+
+
+class TrajectoryEfficiencyAuditor:
+    """
+    Audits agent execution trajectories for redundant calls, oscillation loops,
+    and calculates empirical recovery latency.
+    """
+
+    @staticmethod
+    def audit_tool_redundancy(trajectory: List[TrajectoryStep]) -> Dict[str, Any]:
+        """
+        Detects repeated calls to the same tool with identical arguments.
+        """
+        if not trajectory:
+            return {"total_steps": 0, "redundant_calls": 0, "redundancy_ratio": 0.0, "duplicate_steps": []}
+
+        seen_calls = set()
+        duplicate_steps = []
+
+        for step in trajectory:
+            call_sig = (step.tool_name, str(sorted(step.tool_args.items())) if step.tool_args else "")
+            if call_sig in seen_calls:
+                duplicate_steps.append(step.step_number)
+            else:
+                seen_calls.add(call_sig)
+
+        redundancy_ratio = len(duplicate_steps) / len(trajectory)
+        return {
+            "total_steps": len(trajectory),
+            "redundant_calls": len(duplicate_steps),
+            "redundancy_ratio": round(redundancy_ratio, 4),
+            "duplicate_steps": duplicate_steps,
+        }
+
+    @staticmethod
+    def detect_oscillation_loops(trajectory: List[TrajectoryStep], max_cycle_len: int = 3) -> Dict[str, Any]:
+        """
+        Detects repeating oscillation cycles in tool sequences (e.g. toolA -> toolB -> toolA -> toolB).
+        """
+        tools = [s.tool_name for s in trajectory if s.tool_name]
+        n = len(tools)
+        if n < 4:
+            return {"has_loop": False, "detected_cycles": []}
+
+        detected_cycles = []
+        for cycle_len in range(1, max_cycle_len + 1):
+            for i in range(n - 2 * cycle_len + 1):
+                pattern = tools[i : i + cycle_len]
+                next_slice = tools[i + cycle_len : i + 2 * cycle_len]
+                if pattern == next_slice:
+                    detected_cycles.append({
+                        "cycle_length": cycle_len,
+                        "pattern": pattern,
+                        "start_step": i + 1,
+                    })
+
+        return {
+            "has_loop": len(detected_cycles) > 0,
+            "detected_cycles": detected_cycles,
+        }
+
+    @staticmethod
+    def calculate_recovery_latency(trajectory: List[TrajectoryStep]) -> Dict[str, Any]:
+        """
+        Calculates the number of trial steps taken between an error and reaching success.
+        """
+        if not trajectory:
+            return {"total_errors": 0, "mean_recovery_latency": 0.0, "unrecovered_count": 0}
+
+        latencies = []
+        unrecovered = 0
+        i = 0
+        while i < len(trajectory):
+            if trajectory[i].status != ToolCallStatus.SUCCESS:
+                # Seek next success
+                found_success = False
+                for j in range(i + 1, len(trajectory)):
+                    if trajectory[j].status == ToolCallStatus.SUCCESS:
+                        latencies.append(j - i)
+                        found_success = True
+                        i = j
+                        break
+                if not found_success:
+                    unrecovered += 1
+                    break
+            i += 1
+
+        mean_lat = float(sum(latencies) / len(latencies)) if latencies else 0.0
+        return {
+            "total_errors": len(latencies) + unrecovered,
+            "resolved_errors": len(latencies),
+            "unrecovered_count": unrecovered,
+            "mean_recovery_latency": round(mean_lat, 2),
+            "latency_distribution": latencies,
+        }
+

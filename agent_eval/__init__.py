@@ -13,7 +13,7 @@ from agent_eval.schema import (
     TrajectoryEvaluation,
     AgentDataset,
 )
-from agent_eval.evaluator import TrajectoryEvaluator
+from agent_eval.evaluator import TrajectoryEvaluator, TrajectoryEfficiencyAuditor
 from agent_eval.metrics import AgentMetricsCalculator
 from agent_eval.experiment_runner import ExperimentRunner
 from agent_eval.report_generator import ReportGenerator
@@ -28,6 +28,7 @@ __all__ = [
     "TrajectoryEvaluation",
     "AgentDataset",
     "TrajectoryEvaluator",
+    "TrajectoryEfficiencyAuditor",
     "AgentMetricsCalculator",
     "ExperimentRunner",
     "ReportGenerator",
@@ -35,3 +36,4 @@ __all__ = [
     "AgentModelClient",
     "ModelCallResult",
 ]
+

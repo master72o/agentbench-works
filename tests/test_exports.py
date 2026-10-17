@@ -14,6 +14,7 @@ def test_top_level_exports():
         "TrajectoryEvaluation",
         "AgentDataset",
         "TrajectoryEvaluator",
+        "TrajectoryEfficiencyAuditor",
         "AgentMetricsCalculator",
         "ExperimentRunner",
         "ReportGenerator",
@@ -22,3 +23,4 @@ def test_top_level_exports():
     for exp in expected_exports:
         assert hasattr(agent_eval, exp), f"Missing export: {exp}"
         assert exp in agent_eval.__all__
+
