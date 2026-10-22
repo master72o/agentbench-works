@@ -12,8 +12,15 @@ from agent_eval.schema import (
     AgentTask,
     TrajectoryEvaluation,
     AgentDataset,
+    MilestoneProgressRecord,
+    TrajectoryCostEstimate,
 )
-from agent_eval.evaluator import TrajectoryEvaluator, TrajectoryEfficiencyAuditor
+from agent_eval.evaluator import (
+    TrajectoryEvaluator,
+    TrajectoryEfficiencyAuditor,
+    MilestoneAuditor,
+    AgentCostEstimator,
+)
 from agent_eval.metrics import AgentMetricsCalculator
 from agent_eval.experiment_runner import ExperimentRunner
 from agent_eval.report_generator import ReportGenerator
@@ -27,8 +34,12 @@ __all__ = [
     "AgentTask",
     "TrajectoryEvaluation",
     "AgentDataset",
+    "MilestoneProgressRecord",
+    "TrajectoryCostEstimate",
     "TrajectoryEvaluator",
     "TrajectoryEfficiencyAuditor",
+    "MilestoneAuditor",
+    "AgentCostEstimator",
     "AgentMetricsCalculator",
     "ExperimentRunner",
     "ReportGenerator",

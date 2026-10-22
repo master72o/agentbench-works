@@ -3,6 +3,7 @@
 > Autonomous Multi-Step Agent Trajectory Benchmark & Self-Healing Error Recovery Observatory: Evaluating Tool Parameter Schema Compliance, Planning Efficiency, and Adaptive Error Recovery across 16 Enterprise Scenarios.
 
 [![Streamlit Studio](https://img.shields.io/badge/Streamlit-Studio_Live-FF4B4B.svg?logo=streamlit)](https://github.com/master72o/agentbench-works)
+[![PyTest: 100% Passing](https://img.shields.io/badge/PyTest-23%2F23%20Passing%20(100%25)-0A9EDC?logo=pytest&logoColor=white)](https://pytest.org)
 [![CI](https://github.com/master72o/agentbench-works/actions/workflows/ci.yml/badge.svg)](https://github.com/master72o/agentbench-works/actions/workflows/ci.yml)
 [![Python 3.10+](https://img.shields.io/badge/python-3.10%2B-blue.svg)](https://www.python.org/downloads/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
@@ -175,7 +176,7 @@ agentbench-works/
 │   ├── agent_evaluation_report.md # Auto-generated empirical research report
 │   └── figures/                  # 4 high-resolution publication charts
 ├── results/                      # Output metrics in JSON & CSV format
-├── tests/                        # 8 passing unit tests across metrics & CLI
+├── tests/                        # 23 passing unit tests across metrics, efficiency, milestones, cost & CLI
 └── LICENSE                       # MIT License
 ```
 

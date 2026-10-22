@@ -30,6 +30,8 @@ class TrajectoryStep:
     tool_args: Dict[str, Any]
     tool_output: str
     status: ToolCallStatus = ToolCallStatus.SUCCESS
+    prompt_tokens: int = 0
+    completion_tokens: int = 0
 
     @classmethod
     def from_dict(cls, data: Dict[str, Any]) -> "TrajectoryStep":
@@ -46,6 +48,8 @@ class TrajectoryStep:
             tool_args=data.get("tool_args", {}),
             tool_output=data.get("tool_output", ""),
             status=st,
+            prompt_tokens=int(data.get("prompt_tokens", 0)),
+            completion_tokens=int(data.get("completion_tokens", 0)),
         )
 
 
@@ -136,3 +140,31 @@ class AgentDataset:
                 if line.strip():
                     tasks.append(AgentTask.from_dict(json.loads(line)))
         return cls(tasks=tasks)
+
+
+@dataclass
+class MilestoneProgressRecord:
+    """Tracks sub-goal and milestone progress through an agent's execution trajectory."""
+    __test__ = False
+
+    task_id: str
+    total_milestones: int
+    achieved_milestones: int
+    completion_ratio: float
+    monotonic_progress: bool
+    regression_count: int
+    milestones_achieved: List[str] = field(default_factory=list)
+
+
+@dataclass
+class TrajectoryCostEstimate:
+    """Estimates LLM token consumption and monetary cost per trajectory."""
+    __test__ = False
+
+    model_name: str
+    prompt_tokens: int
+    completion_tokens: int
+    total_tokens: int
+    estimated_cost_usd: float
+    cost_per_step: float
+

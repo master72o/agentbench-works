@@ -10,6 +10,8 @@ from agent_eval.schema import (
     TrajectoryStep,
     ToolCallStatus,
     TrajectoryEvaluation,
+    MilestoneProgressRecord,
+    TrajectoryCostEstimate,
 )
 
 
@@ -192,4 +194,108 @@ class TrajectoryEfficiencyAuditor:
             "mean_recovery_latency": round(mean_lat, 2),
             "latency_distribution": latencies,
         }
+
+
+class MilestoneAuditor:
+    """
+    Audits agent execution against defined task milestones and sub-goals,
+    tracking monotonic progress and identifying regression loops.
+    """
+
+    @staticmethod
+    def audit_milestones(
+        task_id: str,
+        trajectory: List[TrajectoryStep],
+        required_milestones: List[str],
+    ) -> MilestoneProgressRecord:
+        if not required_milestones:
+            return MilestoneProgressRecord(
+                task_id=task_id,
+                total_milestones=0,
+                achieved_milestones=0,
+                completion_ratio=1.0,
+                monotonic_progress=True,
+                regression_count=0,
+                milestones_achieved=[],
+            )
+
+        achieved: List[str] = []
+        achieved_indices: List[int] = []
+        regression_count = 0
+
+        for step_idx, step in enumerate(trajectory):
+            content = f"{step.thought} {step.tool_name} {step.tool_output}".lower()
+            for m_idx, milestone in enumerate(required_milestones):
+                if milestone.lower() in content and milestone not in achieved:
+                    # Check for monotonicity: achieving milestones out of sequence
+                    if achieved_indices and m_idx < max(achieved_indices):
+                        regression_count += 1
+                    achieved.append(milestone)
+                    achieved_indices.append(m_idx)
+
+        total = len(required_milestones)
+        ratio = round(len(achieved) / total, 4) if total > 0 else 1.0
+        is_monotonic = regression_count == 0 and (
+            achieved_indices == sorted(achieved_indices)
+        )
+
+        return MilestoneProgressRecord(
+            task_id=task_id,
+            total_milestones=total,
+            achieved_milestones=len(achieved),
+            completion_ratio=ratio,
+            monotonic_progress=is_monotonic,
+            regression_count=regression_count,
+            milestones_achieved=achieved,
+        )
+
+
+class AgentCostEstimator:
+    """
+    Estimates token consumption economics and USD runtime cost per trajectory
+    based on standard LLM model pricing tiers.
+    """
+
+    # Pricing per 1,000 tokens (USD)
+    PRICING_TABLE = {
+        "gpt-4o": {"prompt": 0.0025, "completion": 0.010},
+        "claude-3-5-sonnet": {"prompt": 0.0030, "completion": 0.015},
+        "qwen-2.5-72b": {"prompt": 0.0004, "completion": 0.0008},
+        "deepseek-chat": {"prompt": 0.00014, "completion": 0.00028},
+        "default": {"prompt": 0.0015, "completion": 0.0030},
+    }
+
+    @classmethod
+    def estimate_cost(
+        cls,
+        trajectory: List[TrajectoryStep],
+        model_name: str = "default",
+        fallback_prompt_tokens: int = 250,
+        fallback_completion_tokens: int = 80,
+    ) -> TrajectoryCostEstimate:
+        rates = cls.PRICING_TABLE.get(model_name.lower(), cls.PRICING_TABLE["default"])
+
+        total_prompt = 0
+        total_completion = 0
+
+        for step in trajectory:
+            p = step.prompt_tokens if step.prompt_tokens > 0 else fallback_prompt_tokens
+            c = step.completion_tokens if step.completion_tokens > 0 else fallback_completion_tokens
+            total_prompt += p
+            total_completion += c
+
+        prompt_cost = (total_prompt / 1000.0) * rates["prompt"]
+        comp_cost = (total_completion / 1000.0) * rates["completion"]
+        total_cost = prompt_cost + comp_cost
+        steps_count = max(len(trajectory), 1)
+
+        return TrajectoryCostEstimate(
+            model_name=model_name,
+            prompt_tokens=total_prompt,
+            completion_tokens=total_completion,
+            total_tokens=total_prompt + total_completion,
+            estimated_cost_usd=round(total_cost, 6),
+            cost_per_step=round(total_cost / steps_count, 6),
+        )
+
 
