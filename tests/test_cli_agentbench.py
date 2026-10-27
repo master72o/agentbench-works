@@ -56,3 +56,34 @@ def test_domain_metrics_calculation():
     for dom, variants in domain_res.items():
         assert isinstance(dom, str)
         assert len(variants) > 0
+
+
+def test_report_generation_with_economics(tmp_path):
+    from agent_eval.report_generator import ReportGenerator
+
+    metrics = {
+        "Agent_v1_ReAct_Baseline": {
+            "task_success_rate": 0.25,
+            "mean_tool_call_accuracy": 0.646,
+            "mean_planning_efficiency": 1.0,
+            "mean_error_recovery_rate": 0.375,
+            "overall_mean_score": 0.524,
+        }
+    }
+    economics = {
+        "Agent_v1_ReAct_Baseline": {
+            "total_tokens": 9900,
+            "prompt_tokens": 7500,
+            "completion_tokens": 2400,
+            "total_cost_usd": 0.0427,
+            "cost_per_success_usd": 0.0107,
+        }
+    }
+    report_file = tmp_path / "report.md"
+    content = ReportGenerator.generate_markdown_report(
+        metrics, str(report_file), economics=economics
+    )
+    assert report_file.exists()
+    assert "Token Consumption & Economic Efficiency Breakdown" in content
+    assert "$0.0427" in content
+

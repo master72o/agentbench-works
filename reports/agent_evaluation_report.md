@@ -36,6 +36,16 @@ This benchmark comprehensively evaluates three agent architectures across **16 r
 
 ---
 
+## 💰 Token Consumption & Economic Efficiency Breakdown
+
+| Agent Architecture | Total Tokens | Prompt Tokens | Completion Tokens | Total Cost (USD) | Cost / Success |
+| :--- | :--- | :--- | :--- | :--- | :--- |
+| `Agent_v1_ReAct_Baseline` | 9,900 | 7,500 | 2,400 | $0.0427 | $0.0107 |
+| `Agent_v2_Structured_Tools` | 13,860 | 10,500 | 3,360 | $0.0599 | $0.0043 |
+| `Agent_v3_Reflection_Recovery` | 14,850 | 11,250 | 3,600 | $0.0641 | $0.0040 |
+
+---
+
 ## Key Empirical Findings
 
 1. **Schema Validation Eliminates Argument Syntax Errors**:

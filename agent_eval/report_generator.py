@@ -17,6 +17,7 @@ class ReportGenerator:
         metrics: Dict[str, Any],
         output_path: str,
         domain_metrics: Optional[Dict[str, Dict[str, float]]] = None,
+        economics: Optional[Dict[str, Dict[str, Any]]] = None,
     ) -> str:
         os.makedirs(os.path.dirname(output_path), exist_ok=True)
 
@@ -38,6 +39,29 @@ class ReportGenerator:
                     f"| **{dom}** | {v1_score:.1f}% | {v2_score:.1f}% | {v3_score:.1f}% |"
                 )
         domain_table_content = "\n".join(domain_table_rows) if domain_table_rows else "| — | — | — | — |"
+
+        economics_section = ""
+        if economics:
+            econ_rows = []
+            for agent_v, ec in economics.items():
+                total_tok = ec.get("total_tokens", 0)
+                prompt_tok = ec.get("prompt_tokens", 0)
+                comp_tok = ec.get("completion_tokens", 0)
+                tot_cost = ec.get("total_cost_usd", 0.0)
+                cost_succ = ec.get("cost_per_success_usd", 0.0)
+                econ_rows.append(
+                    f"| `{agent_v}` | {total_tok:,d} | {prompt_tok:,d} | {comp_tok:,d} | ${tot_cost:.4f} | ${cost_succ:.4f} |"
+                )
+            econ_content = "\n".join(econ_rows)
+            economics_section = f"""
+---
+
+## 💰 Token Consumption & Economic Efficiency Breakdown
+
+| Agent Architecture | Total Tokens | Prompt Tokens | Completion Tokens | Total Cost (USD) | Cost / Success |
+| :--- | :--- | :--- | :--- | :--- | :--- |
+{econ_content}
+"""
 
         # Dynamically extract numbers for the summary narrative
         v1_succ = metrics.get("Agent_v1_ReAct_Baseline", {}).get("task_success_rate", 0.0) * 100
@@ -80,7 +104,7 @@ This benchmark comprehensively evaluates three agent architectures across **16 r
 | Enterprise Domain | v1 (ReAct Baseline) | v2 (Structured Tools) | v3 (Reflection & Recovery) |
 | :--- | :--- | :--- | :--- |
 {domain_table_content}
-
+{economics_section}
 ---
 
 ## Key Empirical Findings
@@ -122,7 +146,11 @@ This benchmark comprehensively evaluates three agent architectures across **16 r
         return content
 
     @staticmethod
-    def export_results(all_evaluations: Dict[AgentVariant, List[TrajectoryEvaluation]], output_dir: str):
+    def export_results(
+        all_evaluations: Dict[AgentVariant, List[TrajectoryEvaluation]],
+        output_dir: str,
+        economics: Optional[Dict[str, Dict[str, Any]]] = None,
+    ):
         os.makedirs(output_dir, exist_ok=True)
 
         export_data = {}
@@ -145,6 +173,9 @@ This benchmark comprehensively evaluates three agent architectures across **16 r
                     "error_recovery_rate": e.error_recovery_rate,
                     "overall_score": e.overall_score,
                 })
+
+        if economics:
+            export_data["token_economics"] = economics
 
         json_path = os.path.join(output_dir, "agent_evaluation_results.json")
         with open(json_path, "w", encoding="utf-8") as f:
