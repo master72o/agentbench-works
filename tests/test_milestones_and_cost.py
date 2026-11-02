@@ -154,3 +154,42 @@ def test_agent_cost_estimator_fallback_tokens_and_model_pricing():
     est_default = AgentCostEstimator.estimate_cost(trajectory, model_name="unknown-model-xyz")
     assert est_default.model_name == "unknown-model-xyz"
     assert est_default.total_tokens == 330
+
+
+def test_agent_cost_estimator_budget_efficiency_comparison():
+    lean_traj = [
+        TrajectoryStep(
+            step_number=1,
+            thought="Direct query",
+            tool_name="search",
+            tool_args={},
+            tool_output="done",
+            prompt_tokens=400,
+            completion_tokens=100,
+        )
+    ]
+    bloated_traj = [
+        TrajectoryStep(
+            step_number=i,
+            thought="Repeated retry",
+            tool_name="search",
+            tool_args={},
+            tool_output="partial",
+            prompt_tokens=1200,
+            completion_tokens=300,
+        )
+        for i in range(1, 5)
+    ]
+
+    comparison = AgentCostEstimator.compare_budget_efficiency(
+        trajectories_by_variant={"lean_agent": lean_traj, "bloated_agent": bloated_traj},
+        success_rates={"lean_agent": 0.90, "bloated_agent": 0.85},
+        model_name="gpt-4o",
+    )
+
+    assert comparison["recommended_variant"] == "lean_agent"
+    assert (
+        comparison["variants"]["lean_agent"]["cost_per_successful_task_usd"]
+        < comparison["variants"]["bloated_agent"]["cost_per_successful_task_usd"]
+    )
+

@@ -299,3 +299,41 @@ class AgentCostEstimator:
         )
 
 
+    @classmethod
+    def compare_budget_efficiency(
+        cls,
+        trajectories_by_variant: Dict[str, List[TrajectoryStep]],
+        success_rates: Dict[str, float],
+        model_name: str = "gpt-4o",
+    ) -> Dict[str, Any]:
+        """
+        Compares agent variants by cost-per-successful-task and identifies the
+        Pareto-optimal variant maximizing success rate per USD spent.
+        """
+        variant_reports: Dict[str, Dict[str, Any]] = {}
+        best_variant = None
+        best_efficiency_score = -1.0
+
+        for variant, traj in trajectories_by_variant.items():
+            cost_est = cls.estimate_cost(traj, model_name=model_name)
+            sr = max(0.0, min(1.0, float(success_rates.get(variant, 0.0))))
+            cost_usd = max(cost_est.estimated_cost_usd, 1e-6)
+            cost_per_success = round(cost_est.estimated_cost_usd / sr, 6) if sr > 0 else None
+            efficiency_score = sr / cost_usd
+
+            if efficiency_score > best_efficiency_score:
+                best_efficiency_score = efficiency_score
+                best_variant = variant
+
+            variant_reports[variant] = {
+                "total_tokens": cost_est.total_tokens,
+                "estimated_cost_usd": cost_est.estimated_cost_usd,
+                "success_rate": round(sr, 4),
+                "cost_per_successful_task_usd": cost_per_success,
+            }
+
+        return {
+            "model_name": model_name,
+            "recommended_variant": best_variant,
+            "variants": variant_reports,
+        }
